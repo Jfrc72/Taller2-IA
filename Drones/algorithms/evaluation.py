@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from algorithms.utils import bfs_distance
 from typing import TYPE_CHECKING
 
 
@@ -42,4 +42,39 @@ def evaluation_function(state: GameState) -> float:
     - A good evaluation function balances delivery progress with hunter avoidance.
     """
     # TODO: Implement your code here
-    return 0.0
+    # Terminal
+    if state.is_win():
+        return 1000.0
+    if state.is_lose():
+        return -1000.0
+
+    drone = state.get_drone_position()
+    hunters = state.get_hunter_positions()
+    deliveries = state.get_pending_deliveries()
+    layout = state.get_layout()
+
+    value = float(state.get_score())
+
+    # (a) Distancia a entregas
+    if deliveries:
+        d_delivery = min(
+            bfs_distance(layout, drone, p, False) for p in deliveries
+        )
+        value += 50.0 / (1.0 + d_delivery)
+        value -= 10.0 * len(deliveries)
+    else:
+        value += 500.0
+
+    # (b) Distancia a cazadores
+    if hunters:
+        d_hunter = min(
+            bfs_distance(layout, h, drone, True) for h in hunters
+        )
+
+        if d_hunter == 0:
+            return -1000.0
+
+        if d_hunter < float("inf"):
+            value -= 200.0 / (1.0 + d_hunter)
+
+    return max(-1000.0, min(1000.0, value))

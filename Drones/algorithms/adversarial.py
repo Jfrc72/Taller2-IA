@@ -66,7 +66,52 @@ class MinimaxAgent(MultiAgentSearchAgent):
         - Return the ACTION (not the value) that maximizes the minimax value for the drone.
         """
         # TODO: Implement your code here
-        return None
+        def minimax_value(s: GameState, agent_index: int, depth_left: int) -> float:
+            if s.is_win() or s.is_lose() or depth_left == 0:
+                return self.evaluation_function(s)
+
+            num_agents = s.get_num_agents()
+            legal = s.get_legal_actions(agent_index)
+            if not legal:
+                return self.evaluation_function(s)
+
+            next_agent = (agent_index + 1) % num_agents
+            next_depth = depth_left - 1 if next_agent == 0 else depth_left
+
+            # MAX: drone
+            if agent_index == 0:
+                best = float("-inf")
+                for a in legal:
+                    succ = s.generate_successor(agent_index, a)
+                    val = minimax_value(succ, next_agent, next_depth)
+                    best = max(best, val)
+                return best
+            # MIN: hunters
+            else:
+                best = float("inf")
+                for a in legal:
+                    succ = s.generate_successor(agent_index, a)
+                    val = minimax_value(succ, next_agent, next_depth)
+                    best = min(best, val)
+                return best
+
+        legal_actions = state.get_legal_actions(0)
+        if not legal_actions:
+            return None
+
+        best_action = None
+        best_value = float("-inf")
+
+        num_agents = state.get_num_agents()
+
+        for a in legal_actions:
+            succ = state.generate_successor(0, a)
+            val = minimax_value(succ, 1 % num_agents, self.depth)
+            if val > best_value:
+                best_value = val
+                best_action = a
+
+        return best_action
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
@@ -91,7 +136,69 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         - Pass alpha and beta through the recursive calls.
         """
         # TODO: Implement your code here (BONUS)
-        return None
+        def alphabeta(
+            s: GameState,
+            agent_index: int,
+            depth_left: int,
+            alpha: float,
+            beta: float,
+        ) -> float:
+
+            if s.is_win() or s.is_lose() or depth_left == 0:
+                return self.evaluation_function(s)
+
+            num_agents = s.get_num_agents()
+            legal = s.get_legal_actions(agent_index)
+            if not legal:
+                return self.evaluation_function(s)
+
+            next_agent = (agent_index + 1) % num_agents
+            next_depth = depth_left - 1 if next_agent == 0 else depth_left
+
+            if agent_index == 0:  # MAX
+                v = float("-inf")
+                for a in legal:
+                    succ = s.generate_successor(agent_index, a)
+                    val = alphabeta(succ, next_agent, next_depth, alpha, beta)
+                    v = max(v, val)
+
+                    if v > beta:
+                        return v
+                    alpha = max(alpha, v)
+                return v
+            else:  # MIN
+                v = float("inf")
+                for a in legal:
+                    succ = s.generate_successor(agent_index, a)
+                    val = alphabeta(succ, next_agent, next_depth, alpha, beta)
+                    v = min(v, val)
+
+                    if v < alpha:
+                        return v
+                    beta = min(beta, v)
+                return v
+
+        legal_actions = state.get_legal_actions(0)
+        if not legal_actions:
+            return None
+
+        alpha = float("-inf")
+        beta = float("inf")
+
+        best_action = None
+        best_value = float("-inf")
+
+        num_agents = state.get_num_agents()
+
+        for a in legal_actions:
+            succ = state.generate_successor(0, a)
+            val = alphabeta(succ, 1 % num_agents, self.depth, alpha, beta)
+            if val > best_value:
+                best_value = val
+                best_action = a
+            alpha = max(alpha, best_value)
+
+        return best_action
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):

@@ -230,5 +230,67 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         - Do NOT prune in expectimax (unlike alpha-beta).
         - self.prob is set via the constructor argument prob.
         """
-        # TODO: Implement your code here
-        return None
+    # TODO: Implement your code here 
+
+    def get_action(self, state: GameState) -> Directions | None:
+    #:D riquitii
+        def expectimax(state_actual: GameState, agent_index: int, depth_left: int) -> float:
+            # nodos extremos (hojitas)
+            if state_actual.is_win() or state_actual.is_lose() or depth_left == 0:
+                return self.evaluation_function(state_actual)
+
+            acciones = state_actual.get_legal_actions(agent_index)
+            if not acciones:
+                return self.evaluation_function(state_actual)
+
+            num_agents = state_actual.get_num_agents()
+            siguiente_agente = (agent_index + 1) % num_agents
+
+            if siguiente_agente == 0:
+                siguiente_depth = depth_left - 1
+            else:
+                siguiente_depth = depth_left
+
+            # dron (max)
+            if agent_index == 0:
+                mejor_valor = float("-inf")
+
+                for accion in acciones:
+                    sucesor = state_actual.generate_successor(agent_index, accion)
+                    valor = expectimax(sucesor, siguiente_agente, siguiente_depth)
+
+                    if valor > mejor_valor:
+                        mejor_valor = valor
+
+                return mejor_valor
+
+            # turno del cazador, nodo probabilistico (azar)
+            valores = []
+
+            for accion in acciones:
+                sucesor = state_actual.generate_successor(agent_index, accion)
+                valor = expectimax(sucesor, siguiente_agente, siguiente_depth)
+                valores.append(valor)
+
+            peor_caso = min(valores)
+            promedio = sum(valores) / len(valores)
+
+            return (1 - self.prob) * peor_caso + self.prob * promedio
+
+        acciones_drone = state.get_legal_actions(0)
+        if not acciones_drone:
+            return None
+
+        mejor_accion = None
+        mejor_valor = float("-inf")
+        num_agents = state.get_num_agents()
+
+        for accion in acciones_drone:
+            sucesor = state.generate_successor(0, accion)
+            valor = expectimax(sucesor, 1 % num_agents, self.depth)
+
+            if valor > mejor_valor:
+                mejor_valor = valor
+                mejor_accion = accion
+
+        return mejor_accion
